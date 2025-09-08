@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <title>MindAR - Realidade Aumentada</title>
+    
+    <!-- Importação do A-Frame e MindAR -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+      /* Estilo geral para a página */
+      html, body {
+        position: relative;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Inter', sans-serif;
+      }
+      
+      /* Overlay para instruções e loading */
+      .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.8);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        z-index: 10;
+        transition: opacity 0.5s ease-out;
+      }
+      
+      .overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .overlay h1 {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+      }
+
+      .overlay p {
+        font-size: 1rem;
+        max-width: 80%;
+        margin-bottom: 20px;
+      }
+
+      .overlay button {
+        padding: 12px 24px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .overlay button:hover {
+        background-color: #0056b3;
+      }
+      
+      /* Estilo para a tela de escaneamento */
+      #scanning-ui {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent;
+        display: none; /* Começa escondido */
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+      }
+
+      #scanning-ui.visible {
+        display: flex;
+      }
+
+      .scanning-box {
+        width: 70vw;
+        height: 70vw;
+        max-width: 400px;
+        max-height: 400px;
+        border: 4px solid rgba(255, 255, 255, 0.7);
+        border-style: dashed;
+        border-radius: 16px;
+        animation: scanning 2s infinite linear;
+      }
+      
+      @keyframes scanning {
+        0% {
+          border-color: rgba(255, 255, 255, 0.7);
+        }
+        50% {
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+        100% {
+          border-color: rgba(255, 255, 255, 0.7);
+        }
+      }
+
+    </style>
+  </head>
+  <body>
+    <!-- Overlay de Loading (escondido, mas necessário para a biblioteca) -->
+    <div id="loading-overlay" class="overlay hidden"></div>
+
+    <!-- Overlay inicial para dar boas-vindas e pedir permissão -->
+    <div id="welcome-overlay" class="overlay">
+      <h1>Realidade Aumentada com MindAR</h1>
+      <p>Este aplicativo precisa de acesso à sua câmera para funcionar. Aponte para a imagem alvo para ver a mágica acontecer.</p>
+      <button id="start-button">Iniciar AR</button>
+    </div>
+
+    <!-- UI de escaneamento que aparece sobre a câmera -->
+    <div id="scanning-ui">
+        <div class="scanning-box"></div>
+    </div>
+
+    <!-- 
+      Links para seus novos arquivos no repositório do GitHub.
+    -->
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: https://raw.githubusercontent.com/MirkosMartins/UFN-IA-2026/main/robo.mind; maxTrack: 1; uiScanning: #scanning-ui; uiLoading: #loading-overlay;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
+      
+      <!-- Câmera e recursos -->
+      <a-assets>
+        <a-asset-item id="skullModel" src="https://raw.githubusercontent.com/MirkosMartins/UFN-IA-2026/main/cranio.gltf"></a-asset-item>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      
+      <!-- 
+        Alvo da imagem. O `targetIndex` corresponde ao alvo no seu arquivo .mind.
+      -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <!-- Luz ambiente para iluminar o modelo -->
+        <a-light type="ambient" color="#FFF" intensity="0.5"></a-light>
+        <!-- Luz direcional para criar sombras e profundidade -->
+        <a-light type="directional" color="#FFF" intensity="1" position="-1 2 1"></a-light>
+        
+        <!-- 
+          Seu novo modelo 3D (crânio).
+          Ajuste a rotação, posição e escala conforme necessário.
+        -->
+        <a-gltf-model 
+          rotation="0 0 0" 
+          position="0 0 0.1" 
+          scale="0.1 0.1 0.1" 
+          src="#skullModel"
+          animation-mixer>
+        </a-gltf-model>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // Espera a página inteira carregar (incluindo scripts externos)
+      window.onload = () => {
+        const sceneEl = document.getElementById('ar-scene');
+        
+        // O evento 'loaded' do A-Frame é a garantia de que a cena e seus sistemas estão prontos.
+        sceneEl.addEventListener('loaded', () => {
+          const startButton = document.getElementById('start-button');
+          const welcomeOverlay = document.getElementById('welcome-overlay');
+          const scanningUI = document.getElementById('scanning-ui');
+          
+          // Agora podemos pegar o sistema MindAR com segurança
+          const arSystem = sceneEl.systems['mindar-image-system'];
+
+          startButton.addEventListener('click', () => {
+            welcomeOverlay.classList.add('hidden');
+            arSystem.start(); // Chamar start() agora é seguro.
+          });
+
+          // Gerenciar a visibilidade da UI de escaneamento
+          sceneEl.addEventListener('arReady', () => {
+            scanningUI.classList.add('visible');
+          });
+          sceneEl.addEventListener('targetFound', () => {
+            scanningUI.classList.remove('visible');
+          });
+          sceneEl.addEventListener('targetLost', () => {
+            scanningUI.classList.add('visible');
+          });
+        });
+      };
+    </script>
+  </body>
+</html>
+
